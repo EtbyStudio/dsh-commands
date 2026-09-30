@@ -13,24 +13,22 @@
 从 npm 安装：
 
 ```sh
-dsh plugin --profile web add @etby-studio/dsh-commands
+dsh plugin add @etby-studio/dsh-commands
 ```
 
 本地开发（构建产物 `lib/` 不入库；克隆后先构建）：
 
 ```sh
 pnpm run build
-dsh plugin --profile web add /path/to/dsh-commands
+dsh plugin add /path/to/dsh-commands
 ```
 
-两种方式都要在 profile 的用户 patch 层插入插件行：
+本包声明了 `dsh.bundle.patch`（`cordis.patch.yml`），因此 `dsh plugin add` 会把它作为 profile
+配置层安装，并由该层自行插入插件行——不需要再手工编辑 `cordis.patch.yml`。
+不要同时在 `$DSH_HOME/profiles/<name>/cordis.patch.yml` 插入同一行：重复的同一 id 会成为重复 Loader 条目。
 
-```sh
-# $DSH_HOME/profiles/web/cordis.patch.yml
-# - insert:
-#     - id: dsh-commands
-#       name: @etby-studio/dsh-commands
-```
+`dsh plugin add` 会拒绝没有 `dsh.bundle` 的包；DSH 还要求组合包的每个 `@deepseek-ai/dsh-*`
+peer 版本范围匹配运行时版本，因此本版本面向 dsh `0.2.0-rc.2`（peers 为 `^0.2.0-rc.2`）。
 
 启动后，`<dshHome>/commands` 下的每个 `*.md` 文件都会成为 slash 命令（`dshHome` 默认为 `$DSH_HOME` 或 `~/.dsh`）。
 
@@ -92,7 +90,7 @@ pnpm run typecheck
 pnpm run test      # 30 个测试：发现、watcher、真实 Loader 组合
 ```
 
-`@deepseek-ai/*` 包是 peer 依赖，运行时从 dsh 安装解析；测试针对已发布的 npm 版本运行。
+`@deepseek-ai/*` 包是 peer 依赖，运行时从 dsh 安装解析；测试针对已发布的 npm 版本运行（当前 dsh `0.2.0-rc.2`）。
 
 ## 许可证
 

@@ -85,7 +85,7 @@ describe('dsh-commands real Loader composition', () => {
         input: { hint: '[message]' },
       })
     })
-    const execution = await context.commands.execute(agent, '/go 目标描述', new AbortController().signal)
+    const execution = await context.commands.execute(agent, '/go 目标描述', [], new AbortController().signal)
     if (execution === undefined) throw new Error('Loader composition did not resolve /go')
     expect(execution.result).toEqual({
       kind: 'success',
@@ -97,7 +97,8 @@ describe('dsh-commands real Loader composition', () => {
     expect(steered.source).toEqual({ kind: 'user' })
 
     // The session log records the command lifecycle exactly as dispatched.
-    expect(session.events.map(event => ({ type: event.type, data: event.data }))).toEqual([
+    // dsh 0.2.0 replaced the synchronous `session.events` getter with snapshots.
+    expect(session.snapshotEvents().map(event => ({ type: event.type, data: event.data }))).toEqual([
       {
         type: 'command/run',
         data: {

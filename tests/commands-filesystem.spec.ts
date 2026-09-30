@@ -97,7 +97,9 @@ async function harness(
 ): Promise<{ ctx: Context; agent: Agent; steer: ReturnType<typeof vi.fn> }> {
   const ctx = new Context()
   await ctx.plugin(CommandRuntime)
-  home = await mkdtemp(join(tmpdir(), 'dsh-commands-'))
+  // dsh 0.2.0 canonicalizes every watch target through realpath, so the test
+  // root is canonicalized up front and every emitted path stays under it.
+  home = await realpath(await mkdtemp(join(tmpdir(), 'dsh-commands-')))
   await pre?.(home)
   // The command root exists up front so discovery opens the Chokidar watcher
   // (the missing-root ancestor path has its own watcher suite).
@@ -171,7 +173,7 @@ describe('dsh-commands discovery', () => {
     watcher().emitter.emit('add', go)
     await settle()
 
-    const execution = await ctx.commands.execute(agent, '/go', new AbortController().signal)
+    const execution = await ctx.commands.execute(agent, '/go', [], new AbortController().signal)
     if (execution === undefined) throw new Error('did not resolve /go')
     expect(execution.result).toEqual({ kind: 'success', text: 'Command body submitted to the model.' })
     const steers = steer.mock.calls
@@ -179,7 +181,7 @@ describe('dsh-commands discovery', () => {
     expect(first.content[0]?.text).toBe('## Flow\n1. Review.\n2. Execute.')
     expect(first.source).toEqual({ kind: 'user' })
 
-    await ctx.commands.execute(agent, '/go 目标描述', new AbortController().signal)
+    await ctx.commands.execute(agent, '/go 目标描述', [], new AbortController().signal)
     const second = steers[1]?.[0] as { content: { type: string; text: string }[] }
     expect(second.content[0]?.text).toBe('## Flow\n1. Review.\n2. Execute.\n\n目标描述')
   })
@@ -191,7 +193,7 @@ describe('dsh-commands discovery', () => {
     watcher().emitter.emit('add', audit)
     await settle()
 
-    await ctx.commands.execute(agent, '/audit PA 删除', new AbortController().signal)
+    await ctx.commands.execute(agent, '/audit PA 删除', [], new AbortController().signal)
     const steered = steer.mock.calls[0]?.[0] as { content: { type: string; text: string }[] }
     expect(steered.content[0]?.text).toBe('Scope: PA 删除\n\nRun the audit.')
   })
@@ -208,7 +210,7 @@ describe('dsh-commands discovery', () => {
     watcher().emitter.emit('change', path)
     await settle()
     expect(ctx.commands.find(agent, 'go')?.description).toBe('Execute the plan now')
-    await ctx.commands.execute(agent, '/go', new AbortController().signal)
+    await ctx.commands.execute(agent, '/go', [], new AbortController().signal)
     const steered = steer.mock.calls.at(-1)?.[0] as { content: { type: string; text: string }[] }
     expect(steered.content[0]?.text).toBe('New body.')
 
@@ -239,7 +241,7 @@ describe('dsh-commands discovery', () => {
     await settle()
 
     expect(ctx.commands.find(agent, 'plan')?.description).toBe('Built-in plan mode')
-    await ctx.commands.execute(agent, '/plan', new AbortController().signal)
+    await ctx.commands.execute(agent, '/plan', [], new AbortController().signal)
     expect(handled).toBe(true)
     expect(steer).not.toHaveBeenCalled()
   })
@@ -252,7 +254,7 @@ describe('dsh-commands discovery', () => {
     await settle()
     await rm(path)
 
-    const execution = await ctx.commands.execute(agent, '/go', new AbortController().signal)
+    const execution = await ctx.commands.execute(agent, '/go', [], new AbortController().signal)
     if (execution === undefined) throw new Error('did not resolve /go')
     expect(execution.result.kind).toBe('error')
     expect(steer).not.toHaveBeenCalled()
@@ -312,7 +314,7 @@ describe('dsh-commands discovery', () => {
     watcher().emitter.emit('add', path)
     await settle()
     expect(ctx.commands.find(agent, 'go')?.description).toBe('Execute the plan')
-    await ctx.commands.execute(agent, '/go', new AbortController().signal)
+    await ctx.commands.execute(agent, '/go', [], new AbortController().signal)
     expect(first.mock.calls).toHaveLength(1)
   })
 
@@ -324,7 +326,7 @@ describe('dsh-commands discovery', () => {
     await settle()
     await writeFile(path, 'broken without frontmatter')
 
-    const execution = await ctx.commands.execute(agent, '/go', new AbortController().signal)
+    const execution = await ctx.commands.execute(agent, '/go', [], new AbortController().signal)
     if (execution === undefined) throw new Error('did not resolve /go')
     expect(execution.result.kind).toBe('error')
     expect(steer).not.toHaveBeenCalled()

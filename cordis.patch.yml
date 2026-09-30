@@ -1,0 +1,7 @@
+# dsh-commands 组合包 patch：把文件系统命令发现插件插入 profile 组合。
+#
+# `dsh.bundle.patch` 指向本文件，因此 `dsh plugin add` 会把它作为一个配置层
+# 自动应用，无需再手工编辑 $DSH_HOME/profiles/<name>/cordis.patch.yml。
+- insert:
+    - id: dsh-commands
+      name: '@etby-studio/dsh-commands'

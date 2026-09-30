@@ -13,24 +13,24 @@ It is a plugin for the DeepSeek Harness command registry (`ctx.commands`, `@deep
 From npm:
 
 ```sh
-dsh plugin --profile web add @etby-studio/dsh-commands
+dsh plugin add @etby-studio/dsh-commands
 ```
 
 Developing locally (the build output `lib/` is gitignored; build it first after cloning):
 
 ```sh
 pnpm run build
-dsh plugin --profile web add /path/to/dsh-commands
+dsh plugin add /path/to/dsh-commands
 ```
 
-In both cases, insert the plugin in the profile's user patch layer:
+The package declares `dsh.bundle.patch` (`cordis.patch.yml`), so `dsh plugin add` installs it as a
+profile layer and that layer inserts the plugin row itself — no manual `cordis.patch.yml` edit.
+Do not also add the row to `$DSH_HOME/profiles/<name>/cordis.patch.yml`: a second insert of the
+same id is a duplicate Loader entry.
 
-```sh
-# $DSH_HOME/profiles/web/cordis.patch.yml
-# - insert:
-#     - id: dsh-commands
-#       name: @etby-studio/dsh-commands
-```
+`dsh plugin add` refuses packages without `dsh.bundle`, and DSH loads a bundle only when every
+`@deepseek-ai/dsh-*` peer range matches the runtime version, so this release targets
+dsh `0.2.0-rc.2` (peers `^0.2.0-rc.2`).
 
 After boot, any `*.md` file in `<dshHome>/commands` becomes a slash command (`dshHome` defaults to `$DSH_HOME` or `~/.dsh`).
 
@@ -92,7 +92,7 @@ pnpm run typecheck
 pnpm run test      # 30 tests: discovery, watcher, real Loader composition
 ```
 
-`@deepseek-ai/*` packages are peer dependencies resolved from the dsh installation at runtime; the tests run against the published npm releases.
+`@deepseek-ai/*` packages are peer dependencies resolved from the dsh installation at runtime; the tests run against the published npm releases (currently dsh `0.2.0-rc.2`).
 
 ## License
 

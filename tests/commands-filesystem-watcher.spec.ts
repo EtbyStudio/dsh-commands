@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events'
 import type { Stats } from 'node:fs'
-import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -95,7 +95,9 @@ afterEach(async () => {
 async function harness(): Promise<{ ctx: Context; agent: Agent }> {
   const ctx = new Context()
   await ctx.plugin(CommandRuntime)
-  home = await mkdtemp(join(tmpdir(), 'dsh-commands-fs-watch-'))
+  // dsh 0.2.0 canonicalizes every watch target through realpath, so the test
+  // root is canonicalized up front and every emitted path stays under it.
+  home = await realpath(await mkdtemp(join(tmpdir(), 'dsh-commands-fs-watch-')))
   provider = new CommandsFilesystemProvider(ctx, { dshHome: home })
   await provider.ready
   const session = Session.create(SessionId('commands-filesystem-watch-test'))
